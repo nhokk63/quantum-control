@@ -31,9 +31,9 @@
     display: flex; background: rgba(118, 118, 128, 0.12); border-radius: 9px; padding: 3px; margin-bottom: 20px;
   }
   .segment {
-    flex: 1; text-align: center; padding: 7px 0; font-size: 13px; font-weight: 600; color: var(--text-main); border-radius: 7px; cursor: pointer; transition: 0.2s;
+    flex: 1; text-align: center; padding: 10px 0; font-size: 13px; font-weight: 600; color: var(--text-main); border-radius: 7px; cursor: pointer; transition: 0.2s; -webkit-tap-highlight-color: transparent;
   }
-  .segment.active { background: #ffffff; box-shadow: 0 3px 8px rgba(0,0,0,0.08); }
+  .segment.active { background: #ffffff; box-shadow: 0 3px 8px rgba(0,0,0,0.08); color: var(--apple-blue); }
   
   .card {
     background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
@@ -136,7 +136,7 @@
   </div>
 </div>
 
-<!-- LÕI GIAO TIẾP TRỰC TIẾP (REST API THUẦN TÚY) -->
+<!-- LÕI GIAO TIẾP ĐÃ FIX CHUẨN ĐÉT SỰ KIỆN TAB -->
 <script>
   const DB_URL = "https://quantum-bot-server-149ac-default-rtdb.asia-southeast1.firebasedatabase.app";
   let currentAccount = "LONG_1";
@@ -144,17 +144,16 @@
   const toggles = document.querySelectorAll('.bot-toggle');
   const tabs = document.querySelectorAll('.segment');
 
-  // Chuyển qua lại giữa 4 tài khoản
+  // Fix dùng currentTarget để nhận chính xác thẻ tab khi bấm trên điện thoại
   tabs.forEach(tab => {
     tab.addEventListener('click', (e) => {
       tabs.forEach(t => t.classList.remove('active'));
-      e.target.classList.add('active');
-      currentAccount = e.target.getAttribute('data-acc');
+      e.currentTarget.classList.add('active');
+      currentAccount = e.currentTarget.getAttribute('data-acc');
       fetchData(currentAccount);
     });
   });
 
-  // Gạt công tắc -> Bắn thẳng lệnh lên Firebase ngay lập tức
   toggles.forEach(toggle => {
     toggle.addEventListener('change', (e) => {
       const toggleId = e.target.id;
@@ -168,7 +167,6 @@
     });
   });
 
-  // Hàm kéo dữ liệu từ Firebase về App
   function fetchData(acc) {
     fetch(`${DB_URL}/${acc}/toggles.json`)
       .then(res => res.json())
@@ -177,6 +175,8 @@
           toggles.forEach(toggle => {
             if (data[toggle.id] !== undefined) {
               toggle.checked = data[toggle.id];
+            } else {
+              toggle.checked = false;
             }
           });
         } else {
@@ -185,12 +185,10 @@
       }).catch(err => console.log("Lỗi tải:", err));
   }
 
-  // Tự động đồng bộ mỗi 2 giây
   setInterval(() => {
     fetchData(currentAccount);
   }, 2000);
 
-  // Kéo dữ liệu lần đầu ngay khi mở app
   fetchData(currentAccount);
 </script>
 </body>
