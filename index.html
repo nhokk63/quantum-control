@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg-color: #f2f2f7; /* Nền xám nhạt chuẩn Apple */
+    --glass-bg: rgba(255, 255, 255, 0.65);
+    --glass-border: rgba(0, 0, 0, 0.05);
+    --text-main: #1c1c1e;
+    --text-sub: #3a3a3c;
+    --text-muted: #8e8e93;
+    --apple-blue: #007aff;
+    --apple-green: #34c759;
+    --apple-red: #ff3b30;
+    --card-radius: 16px;
+  }
+  
+  body {
+    background: var(--bg-color);
+    color: var(--text-main);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    margin: 0; padding: 20px 15px;
+    min-height: 100vh;
+  }
+  
+  .app-container { max-width: 500px; margin: 0 auto; padding-bottom: 30px;}
+  .header { text-align: center; font-size: 20px; font-weight: 700; margin-bottom: 25px; color: var(--text-main); letter-spacing: -0.5px; }
+  
+  /* Thanh Segmented Control chuẩn iOS Light */
+  .segmented-control {
+    display: flex; background: rgba(118, 118, 128, 0.12); border-radius: 9px; padding: 3px; margin-bottom: 20px;
+  }
+  .segment {
+    flex: 1; text-align: center; padding: 7px 0; font-size: 13px; font-weight: 600; color: var(--text-main); border-radius: 7px; cursor: pointer; transition: 0.2s;
+  }
+  .segment.active { background: #ffffff; box-shadow: 0 3px 8px rgba(0,0,0,0.08); }
+  
+  /* Thẻ Kính mờ Trắng (Light Glassmorphism) */
+  .card {
+    background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border); border-radius: var(--card-radius); padding: 18px; margin-bottom: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+  }
+  .card-title { font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.5px; }
+  
+  /* Cấu trúc các dòng thông số */
+  .stat-row { display: flex; justify-content: space-between; font-size: 15px; margin-bottom: 12px; color: var(--text-sub); }
+  .stat-row:last-child { margin-bottom: 0; }
+  .stat-val { font-weight: 600; color: var(--text-main); }
+  .text-green { color: var(--apple-green); font-weight: 700;}
+  .text-red { color: var(--apple-red); font-weight: 700;}
+  .divider { height: 1px; background: rgba(0,0,0,0.06); margin: 15px 0; }
+  
+  /* Danh sách lệnh đang chạy */
+  .order-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(0,0,0,0.04);}
+  .order-item:last-child { border-bottom: none; padding-bottom: 0;}
+  .order-info { display: flex; flex-direction: column; gap: 4px;}
+  .order-symbol { font-size: 14px; font-weight: 700; color: var(--text-main);}
+  .order-detail { font-size: 12px; color: var(--text-muted); font-weight: 500;}
+  .order-badge-buy { background: rgba(52, 199, 89, 0.15); color: var(--apple-green); padding: 2px 6px; border-radius: 4px; font-size: 11px;}
+  .order-badge-sell { background: rgba(255, 59, 48, 0.15); color: var(--apple-red); padding: 2px 6px; border-radius: 4px; font-size: 11px;}
+  
+  /* Nút gạt Toggles chuẩn Apple Light */
+  .control-row {
+    display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,0.04);
+  }
+  .control-row:last-child { border-bottom: none; padding-bottom: 0;}
+  .control-row:first-child { padding-top: 0;}
+  .control-label { font-size: 15px; font-weight: 500; display: flex; align-items: center; gap: 10px; color: var(--text-main);}
+  
+  .switch { position: relative; display: inline-block; width: 51px; height: 31px; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #e9e9ea; transition: .3s; border-radius: 31px; border: 1px solid rgba(0,0,0,0.04);
+  }
+  .slider:before {
+    position: absolute; content: ""; height: 27px; width: 27px; left: 1px; bottom: 1px;
+    background-color: white; transition: .3s; border-radius: 50%; box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+  }
+  input:checked + .slider { background-color: var(--apple-green); border-color: var(--apple-green);}
+  input:checked + .slider:before { transform: translateX(20px); }
+</style>
+</head>
+<body>
+<div class="app-container">
+  <div class="header">QUANTUM COMMAND</div>
+  
+  <!-- Thanh chọn Tài khoản -->
+  <div class="segmented-control">
+    <div class="segment active">LONG 1</div>
+    <div class="segment">LONG 2</div>
+    <div class="segment">THANH 1</div>
+    <div class="segment">THANH 2</div>
+  </div>
+
+  <!-- Bảng Tiền nong & Chỉ số sâu -->
+  <div class="card">
+    <div class="card-title">TÀI SẢN & KÝ QUỸ</div>
+    <div class="stat-row"><span>Balance</span> <span class="stat-val">$10,250.00</span></div>
+    <div class="stat-row"><span>Equity</span> <span class="stat-val">$10,285.00</span></div>
+    <div class="divider"></div>
+    <div class="stat-row"><span>Margin (Đã dùng)</span> <span class="stat-val">$250.00</span></div>
+    <div class="stat-row"><span>Free Margin</span> <span class="stat-val">$10,035.00</span></div>
+    <div class="stat-row"><span>Margin Level</span> <span class="stat-val text-green">4114.00%</span></div>
+    <div class="divider"></div>
+    <div class="stat-row"><span>Hôm nay chốt (Closed)</span> <span class="stat-val text-green">+$124.50</span></div>
+    <div class="stat-row"><span>Đang thả nổi (Floating)</span> <span class="stat-val text-green">+$35.00</span></div>
+  </div>
+
+  <!-- Bảng Lệnh Đang Chạy -->
+  <div class="card">
+    <div class="card-title">LỆNH ĐANG CHẠY (2)</div>
+    
+    <div class="order-item">
+      <div class="order-info">
+        <span class="order-symbol">XAUUSD.m <span class="order-badge-buy">BUY</span></span>
+        <span class="order-detail">0.05 Lot • Giá: 2345.50</span>
+      </div>
+      <div class="stat-val text-green">+$20.50</div>
+    </div>
+
+    <div class="order-item">
+      <div class="order-info">
+        <span class="order-symbol">XAUUSD.m <span class="order-badge-sell">SELL</span></span>
+        <span class="order-detail">0.02 Lot • Giá: 2330.15</span>
+      </div>
+      <div class="stat-val text-red">-$15.50</div>
+    </div>
+  </div>
+
+  <!-- Bảng 10 Công tắc -->
+  <div class="card">
+    <div class="card-title">HỆ THỐNG ĐIỀU KHIỂN</div>
+    
+    <div class="control-row">
+      <span class="control-label">🤖 AI Scalp (M1)</span>
+      <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+    </div>
+    <div class="control-row">
+      <span class="control-label">🔥 Lưới DCA Nhồi</span>
+      <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+    </div>
+    <div class="control-row">
+      <span class="control-label">🕸️ Lưới Động ATR</span>
+      <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+    </div>
+    <div class="control-row">
+      <span class="control-label">🧺 Chốt Cụm Pips</span>
+      <label class="switch"><input type="checkbox"><span class="slider"></span></label>
+    </div>
+    <div class="control-row">
+      <span class="control-label">🎯 Target USD</span>
+      <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+    </div>
+    <div class="control-row">
+      <span class="control-label">✂️ Cắt Tỉa (Trim)</span>
+      <label class="switch"><input type="checkbox"><span class="slider"></span></label>
+    </div>
+    <div class="control-row">
+      <span class="control-label">🛡️ Khóa Âm (Hedge)</span>
+      <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+    </div>
+    <div class="control-row">
+      <span class="control-label">👁️ Lọc ADX/CHO</span>
+      <label class="switch"><input type="checkbox"><span class="slider"></span></label>
+    </div>
+    <div class="control-row">
+      <span class="control-label">⏸️ Nghỉ Cuối Tháng</span>
+      <label class="switch"><input type="checkbox"><span class="slider"></span></label>
+    </div>
+    <div class="control-row">
+      <span class="control-label">🐕 Auto BE/TS</span>
+      <label class="switch"><input type="checkbox"><span class="slider"></span></label>
+    </div>
+  </div>
+</div>
+</body>
+</html>
