@@ -2,10 +2,6 @@
 <html lang="vi">
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<!-- Tải thư viện Firebase của Google -->
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
 <style>
   :root {
     --bg-color: #f2f2f7; 
@@ -86,7 +82,7 @@
 <div class="app-container">
   <div class="header">QUANTUM COMMAND</div>
   
-  <!-- Cài đặt ID cho 4 tài khoản để Firebase nhận diện -->
+  <!-- 4 Tài khoản độc lập -->
   <div class="segmented-control">
     <div class="segment active" data-acc="LONG_1">LONG 1</div>
     <div class="segment" data-acc="LONG_2">LONG 2</div>
@@ -103,12 +99,12 @@
     <div class="stat-row"><span>Free Margin</span> <span class="stat-val" id="val_free_margin">$0.00</span></div>
     <div class="stat-row"><span>Margin Level</span> <span class="stat-val text-green" id="val_margin_level">0.00%</span></div>
     <div class="divider"></div>
-    <div class="stat-row"><span>Hôm nay chốt (Closed)</span> <span class="stat-val text-green" id="val_closed">+$0.00</span></div>
-    <div class="stat-row"><span>Đang thả nổi (Floating)</span> <span class="stat-val text-green" id="val_floating">+$0.00</span></div>
+    <div class="stat-row"><span>Hôm nay chốt (Closed)</span> <span class="stat-val text-green" id="val_closed">+$124.50</span></div>
+    <div class="stat-row"><span>Đang thả nổi (Floating)</span> <span class="stat-val text-green" id="val_floating">+$35.00</span></div>
   </div>
 
   <div class="card">
-    <div class="card-title">LỆNH ĐANG CHẠY (Mô phỏng tĩnh)</div>
+    <div class="card-title">LỆNH ĐANG CHẠY (2)</div>
     <div class="order-item">
       <div class="order-info">
         <span class="order-symbol">XAUUSD.m <span class="order-badge-buy">BUY</span></span>
@@ -116,9 +112,15 @@
       </div>
       <div class="stat-val text-green">+$20.50</div>
     </div>
+    <div class="order-item">
+      <div class="order-info">
+        <span class="order-symbol">XAUUSD.m <span class="order-badge-sell">SELL</span></span>
+        <span class="order-detail">0.02 Lot • Giá: 2330.15</span>
+      </div>
+      <div class="stat-val text-red">-$15.50</div>
+    </div>
   </div>
 
-  <!-- Cài ID cho 10 công tắc để phân biệt lệnh -->
   <div class="card">
     <div class="card-title">HỆ THỐNG ĐIỀU KHIỂN</div>
     <div class="control-row"><span class="control-label">🤖 AI Scalp (M1)</span><label class="switch"><input type="checkbox" id="ai_scalp" class="bot-toggle"><span class="slider"></span></label></div>
@@ -134,68 +136,62 @@
   </div>
 </div>
 
-<!-- LÕI GIAO TIẾP VỚI FIREBASE -->
+<!-- LÕI GIAO TIẾP TRỰC TIẾP (REST API THUẦN TÚY) -->
 <script>
-  // 1. Khai báo Trạm trung chuyển của sếp
-  const firebaseConfig = {
-    databaseURL: "https://quantum-bot-server-149ac-default-rtdb.asia-southeast1.firebasedatabase.app/"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
-
+  const DB_URL = "https://quantum-bot-server-149ac-default-rtdb.asia-southeast1.firebasedatabase.app";
   let currentAccount = "LONG_1";
-  let currentListener = null;
 
   const toggles = document.querySelectorAll('.bot-toggle');
   const tabs = document.querySelectorAll('.segment');
 
-  // 2. Chuyển đổi qua lại giữa 4 tài khoản
+  // Chuyển qua lại giữa 4 tài khoản
   tabs.forEach(tab => {
     tab.addEventListener('click', (e) => {
-      tabs.forEach(t => t.classList.remove('active')); // Tắt sáng tab cũ
-      e.target.classList.add('active'); // Bật sáng tab mới
-      currentAccount = e.target.getAttribute('data-acc'); // Lấy tên Acc
-      listenData(currentAccount); // Kéo dữ liệu của Acc đó về
+      tabs.forEach(t => t.classList.remove('active'));
+      e.target.classList.add('active');
+      currentAccount = e.target.getAttribute('data-acc');
+      fetchData(currentAccount);
     });
   });
 
-  // 3. Lắng nghe hành động gạt công tắc của sếp
+  // Gạt công tắc -> Bắn thẳng lệnh lên Firebase ngay lập tức
   toggles.forEach(toggle => {
     toggle.addEventListener('change', (e) => {
       const toggleId = e.target.id;
       const state = e.target.checked;
-      // Bắn lệnh lên mây ngay lập tức
-      db.ref(currentAccount + '/toggles/' + toggleId).set(state);
+      
+      fetch(`${DB_URL}/${currentAccount}/toggles/${toggleId}.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(state)
+      }).catch(err => console.log("Lỗi:", err));
     });
   });
 
-  // 4. Hàm đồng bộ dữ liệu Realtime
-  function listenData(account) {
-    // Nếu đang nghe tab cũ thì ngắt kết nối
-    if (currentListener) {
-      db.ref(currentListener).off();
-    }
-    
-    currentListener = account + '/toggles';
-    
-    // Bật bộ đàm lắng nghe tab mới
-    db.ref(currentListener).on('value', (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        toggles.forEach(toggle => {
-          if (data[toggle.id] !== undefined) {
-            toggle.checked = data[toggle.id];
-          }
-        });
-      } else {
-        // Nếu acc mới tinh chưa có data, tắt hết công tắc
-        toggles.forEach(toggle => toggle.checked = false);
-      }
-    });
+  // Hàm kéo dữ liệu từ Firebase về App
+  function fetchData(acc) {
+    fetch(`${DB_URL}/${acc}/toggles.json`)
+      .then(res => res.json())
+      .then(data => {
+        if (data) {
+          toggles.forEach(toggle => {
+            if (data[toggle.id] !== undefined) {
+              toggle.checked = data[toggle.id];
+            }
+          });
+        } else {
+          toggles.forEach(toggle => toggle.checked = false);
+        }
+      }).catch(err => console.log("Lỗi tải:", err));
   }
 
-  // Khởi động phát đầu tiên
-  listenData(currentAccount);
+  // Tự động đồng bộ mỗi 2 giây
+  setInterval(() => {
+    fetchData(currentAccount);
+  }, 2000);
+
+  // Kéo dữ liệu lần đầu ngay khi mở app
+  fetchData(currentAccount);
 </script>
 </body>
 </html>
