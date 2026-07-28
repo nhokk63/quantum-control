@@ -2,6 +2,7 @@
 <html lang="vi">
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quantum Command</title>
 <style>
   :root {
     --bg-color: #f2f2f7; 
@@ -99,31 +100,20 @@
     <div class="stat-row"><span>Free Margin</span> <span class="stat-val" id="val_free_margin">$0.00</span></div>
     <div class="stat-row"><span>Margin Level</span> <span class="stat-val text-green" id="val_margin_level">0.00%</span></div>
     <div class="divider"></div>
-    <div class="stat-row"><span>Hôm nay chốt (Closed)</span> <span class="stat-val text-green" id="val_closed">+$124.50</span></div>
-    <div class="stat-row"><span>Đang thả nổi (Floating)</span> <span class="stat-val text-green" id="val_floating">+$35.00</span></div>
+    <div class="stat-row"><span>Hôm nay chốt (Closed)</span> <span class="stat-val text-green" id="val_closed">+$0.00</span></div>
+    <div class="stat-row"><span>Đang thả nổi (Floating)</span> <span class="stat-val text-green" id="val_floating">+$0.00</span></div>
   </div>
 
   <div class="card">
-    <div class="card-title">LỆNH ĐANG CHẠY (2)</div>
-    <div class="order-item">
-      <div class="order-info">
-        <span class="order-symbol">XAUUSD.m <span class="order-badge-buy">BUY</span></span>
-        <span class="order-detail">0.05 Lot • Giá: 2345.50</span>
-      </div>
-      <div class="stat-val text-green">+$20.50</div>
-    </div>
-    <div class="order-item">
-      <div class="order-info">
-        <span class="order-symbol">XAUUSD.m <span class="order-badge-sell">SELL</span></span>
-        <span class="order-detail">0.02 Lot • Giá: 2330.15</span>
-      </div>
-      <div class="stat-val text-red">-$15.50</div>
+    <div class="card-title" id="positions_title">LỆNH ĐANG CHẠY (0)</div>
+    <div id="positions_list">
+      <div style="text-align:center; padding:15px; color:var(--text-muted); font-size:13px;">Đang tải dữ liệu... ⏳</div>
     </div>
   </div>
 
   <div class="card">
     <div class="card-title">HỆ THỐNG ĐIỀU KHIỂN</div>
-    <div class="control-row"><span class="control-label">🤖 AI Scalp (M1)</span><label class="switch"><input type="checkbox" id="ai_scalp" class="bot-toggle"><span class="slider"></span></label></div>
+    <div class="control-row"><span class="control-label">🤖 Quantum Algo M1</span><label class="switch"><input type="checkbox" id="ai_scalp" class="bot-toggle"><span class="slider"></span></label></div>
     <div class="control-row"><span class="control-label">🔥 Lưới DCA Nhồi</span><label class="switch"><input type="checkbox" id="dca_grid" class="bot-toggle"><span class="slider"></span></label></div>
     <div class="control-row"><span class="control-label">🕸️ Lưới Động ATR</span><label class="switch"><input type="checkbox" id="atr_grid" class="bot-toggle"><span class="slider"></span></label></div>
     <div class="control-row"><span class="control-label">🧺 Chốt Cụm Pips</span><label class="switch"><input type="checkbox" id="pip_close" class="bot-toggle"><span class="slider"></span></label></div>
@@ -136,7 +126,6 @@
   </div>
 </div>
 
-<!-- LÕI GIAO TIẾP ĐÃ FIX CHUẨN ĐÉT SỰ KIỆN TAB -->
 <script>
   const DB_URL = "https://quantum-bot-server-149ac-default-rtdb.asia-southeast1.firebasedatabase.app";
   let currentAccount = "LONG_1";
@@ -144,16 +133,22 @@
   const toggles = document.querySelectorAll('.bot-toggle');
   const tabs = document.querySelectorAll('.segment');
 
-  // Fix dùng currentTarget để nhận chính xác thẻ tab khi bấm trên điện thoại
+  // Xử lý chuyển Tab
   tabs.forEach(tab => {
     tab.addEventListener('click', (e) => {
       tabs.forEach(t => t.classList.remove('active'));
       e.currentTarget.classList.add('active');
       currentAccount = e.currentTarget.getAttribute('data-acc');
+      
+      // Xóa hiển thị cũ ngay lập tức để tạo cảm giác load mượt
+      document.getElementById('positions_list').innerHTML = '<div style="text-align:center; padding:15px; color:var(--text-muted); font-size:13px;">Đang tải dữ liệu... ⏳</div>';
+      
       fetchData(currentAccount);
+      fetchDashboard(currentAccount);
     });
   });
 
+  // Xử lý gạt công tắc
   toggles.forEach(toggle => {
     toggle.addEventListener('change', (e) => {
       const toggleId = e.target.id;
@@ -167,6 +162,7 @@
     });
   });
 
+  // Kéo trạng thái công tắc
   function fetchData(acc) {
     fetch(`${DB_URL}/${acc}/toggles.json`)
       .then(res => res.json())
@@ -182,14 +178,70 @@
         } else {
           toggles.forEach(toggle => toggle.checked = false);
         }
-      }).catch(err => console.log("Lỗi tải:", err));
+      }).catch(err => console.log("Lỗi tải toggles:", err));
   }
 
+  // Kéo Dữ liệu Tài khoản & Lệnh
+  function fetchDashboard(acc) {
+    fetch(`${DB_URL}/${acc}/dashboard.json`)
+      .then(res => res.json())
+      .then(data => {
+        if (data) {
+          // 1. Cập nhật Ký quỹ & Tài sản
+          document.getElementById('val_balance').innerText = "$" + data.balance.toFixed(2);
+          document.getElementById('val_equity').innerText = "$" + data.equity.toFixed(2);
+          document.getElementById('val_margin').innerText = "$" + data.margin.toFixed(2);
+          document.getElementById('val_free_margin').innerText = "$" + data.free_margin.toFixed(2);
+          
+          let marginLvl = document.getElementById('val_margin_level');
+          marginLvl.innerText = data.margin_level.toFixed(2) + "%";
+          marginLvl.className = data.margin_level > 100 || data.margin_level == 0 ? "stat-val text-green" : "stat-val text-red";
+
+          let closedEl = document.getElementById('val_closed');
+          closedEl.innerText = (data.daily_closed >= 0 ? "+$" : "-$") + Math.abs(data.daily_closed).toFixed(2);
+          closedEl.className = data.daily_closed >= 0 ? "stat-val text-green" : "stat-val text-red";
+
+          let floatingEl = document.getElementById('val_floating');
+          floatingEl.innerText = (data.floating >= 0 ? "+$" : "-$") + Math.abs(data.floating).toFixed(2);
+          floatingEl.className = data.floating >= 0 ? "stat-val text-green" : "stat-val text-red";
+
+          // 2. Cập nhật Danh sách Lệnh
+          let posList = data.positions || [];
+          document.getElementById('positions_title').innerText = `LỆNH ĐANG CHẠY (${posList.length})`;
+          
+          let listHTML = "";
+          posList.forEach(pos => {
+              let pnlColor = pos.pnl >= 0 ? "text-green" : "text-red";
+              let sign = pos.pnl >= 0 ? "+$" : "-$";
+              let badgeClass = pos.type === "BUY" ? "order-badge-buy" : "order-badge-sell";
+              
+              listHTML += `
+              <div class="order-item">
+                <div class="order-info">
+                  <span class="order-symbol">XAUUSD.m <span class="${badgeClass}">${pos.type}</span></span>
+                  <span class="order-detail">${pos.volume.toFixed(2)} Lot • Giá: ${pos.price}</span>
+                </div>
+                <div class="stat-val ${pnlColor}">${sign}${Math.abs(pos.pnl).toFixed(2)}</div>
+              </div>`;
+          });
+          
+          if(posList.length === 0) {
+              listHTML = `<div style="text-align:center; padding:15px; color:var(--text-muted); font-size:13px;">Không có lệnh nào đang chạy ☕</div>`;
+          }
+          document.getElementById('positions_list').innerHTML = listHTML;
+        }
+      }).catch(err => console.log("Lỗi tải dashboard:", err));
+  }
+
+  // Chạy vòng lặp tự động kéo dữ liệu mỗi 2 giây
   setInterval(() => {
     fetchData(currentAccount);
+    fetchDashboard(currentAccount);
   }, 2000);
 
+  // Kéo dữ liệu ngay lần đầu mở web
   fetchData(currentAccount);
+  fetchDashboard(currentAccount);
 </script>
 </body>
 </html>
